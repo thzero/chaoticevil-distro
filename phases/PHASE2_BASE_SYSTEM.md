@@ -368,22 +368,309 @@ chmod +x editions/developer/hooks/01-developer-setup.hook.chroot
 
 ---
 
-## Step 2.5 — Add Custom APT Repository (Optional)
+## Step 2.5 — Custom APT Repository for Post-Install Updates
 
-If you have your own `.deb` packages, add your repo to the common base:
+Ubuntu's `unattended-upgrades` handles Ubuntu package updates automatically. But ChaoticEvil-specific files (branding, config, Flatpak app lists) are baked into the ISO at build time and have no update path unless you publish them through a custom apt repo.
 
-Create `common/archives/mydistro.list.chroot`:
-```
-deb [signed-by=/usr/share/keyrings/mydistro-archive-keyring.gpg] https://pkg.mydistro.example.com/apt stable main
-```
+This step sets up that pipeline: a GitHub Pages-hosted apt repo + a `chaoticevil-branding` package. When you update branding or configs, a GitHub Actions workflow rebuilds the repo index and publishes it automatically.
 
-Create `common/archives/mydistro.key.chroot`:
+For alternative hosting options (self-hosted VPS, Google Cloud, Cloudflare), see [Appendix A](#appendix-a--apt-repo-hosting-alternatives) at the bottom of this document.
+
+### 2.5.1 — Package ChaoticEvil branding as a .deb
+
+Create the package skeleton:
 ```bash
-# Export your GPG public key in armored format:
-gpg --export --armor YOUR_KEY_ID > common/archives/mydistro.key.chroot
+mkdir -p packages/chaoticevil-branding/DEBIAN
+mkdir -p packages/chaoticevil-branding/usr/share/backgrounds/chaoticevil
+mkdir -p packages/chaoticevil-branding/usr/share/plymouth/themes/chaoticevil
+mkdir -p packages/chaoticevil-branding/etc/lightdm
+mkdir -p packages/chaoticevil-branding/usr/share/chaoticevil
 ```
 
-> If you don't have packages to host yet, skip this step entirely.
+Create `packages/chaoticevil-branding/DEBIAN/control`:
+```
+Package: chaoticevil-branding
+Version: 1.0.0
+Section: misc
+Priority: optional
+Architecture: all
+Maintainer: ChaoticEvil Releases <releases@thzero.com>
+Description: ChaoticEvil branding and identity assets
+ Wallpapers, Plymouth theme, LightDM config, and other
+ ChaoticEvil-specific customisation files.
+```
+
+Place branding assets in the tree above (`wallpaper.png` → `usr/share/backgrounds/chaoticevil/`, etc.), then build the `.deb`:
+```bash
+dpkg-deb --build packages/chaoticevil-branding output/chaoticevil-branding_1.0.0_all.deb
+```
+
+> Put this in the Makefile as a `make deb` target so it builds alongside the ISOs in CI.
+
+### 2.5.2 — Set up a GitHub Pages apt repository
+
+The apt repo is a static folder of `reprepro`-generated files committed to the `gh-pages` branch of a dedicated repo (or a subdirectory of this one).
+
+**One-time local setup:**
+```bash
+# Install reprepro locally (only needed on your machine / CI runner)
+sudo apt install reprepro
+
+# Create the apt-repo directory (committed to git)
+mkdir -p apt-repo/conf
+
+cat > apt-repo/conf/distributions << 'EOF'
+Origin: ChaoticEvil
+Label: ChaoticEvil
+Codename: stable
+Architectures: amd64 arm64 all
+Components: main
+Description: ChaoticEvil package repository
+SignWith: YOUR_GPG_KEY_ID
+EOF
+
+# Add the first .deb
+reprepro -b apt-repo/ includedeb stable output/chaoticevil-branding_1.0.0_all.deb
+
+# Commit the generated repo to a gh-pages branch
+git checkout --orphan gh-pages
+git rm -rf .
+cp -r apt-repo/* .
+git add .
+git commit -m "init: apt repo"
+git push origin gh-pages
+git checkout main
+```
+
+Enable GitHub Pages in the repo settings → Pages → Source: `gh-pages` branch, root `/`.
+
+Export and commit the GPG public key for users:
+```bash
+gpg --export --armor YOUR_GPG_KEY_ID > apt-repo/chaoticevil-archive-keyring.asc
+```
+
+The repo will be live at:
+```
+https://thzero.github.io/chaoticevil/
+```
+
+### 2.5.3 — Automate repo updates with GitHub Actions
+
+Create `.github/workflows/publish-apt.yml`:
+```yaml
+name: Publish APT repo
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install reprepro and GPG tools
+        run: sudo apt-get install -y reprepro
+
+      - name: Import GPG signing key
+        run: echo "${{ secrets.APT_SIGNING_KEY }}" | gpg --import
+
+      - name: Build .deb
+        run: make deb
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Add .deb to repo
+        run: |
+          cp -r gh-pages/conf apt-repo/conf
+          reprepro -b apt-repo/ includedeb stable output/chaoticevil-branding_*.deb
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: apt-repo
+          force_orphan: false
+          keep_files: true
+```
+
+> **Secret required**: Add `APT_SIGNING_KEY` to the repo's Actions secrets — the GPG private key exported as ASCII armor (`gpg --export-secret-keys --armor YOUR_KEY_ID`).
+
+### 2.5.4 — Wire the repo into installed systems
+
+Create `common/archives/chaoticevil.list.chroot`:
+```
+deb [signed-by=/usr/share/keyrings/chaoticevil-archive-keyring.gpg] https://thzero.github.io/chaoticevil stable main
+```
+
+Create `common/archives/chaoticevil.key.chroot` (the exported GPG public key):
+```bash
+gpg --export --armor YOUR_GPG_KEY_ID > common/archives/chaoticevil.key.chroot
+```
+
+Create `common/hooks/base/02-chaoticevil-repo.hook.chroot`:
+```bash
+#!/bin/bash
+set -e
+# Convert the armored key placed by live-build into binary keyring format
+gpg --dearmor < /etc/apt/trusted.gpg.d/chaoticevil.asc \
+    > /usr/share/keyrings/chaoticevil-archive-keyring.gpg 2>/dev/null || true
+```
+
+```bash
+chmod +x common/hooks/base/02-chaoticevil-repo.hook.chroot
+```
+
+### 2.5.5 — Enable the custom repo in unattended-upgrades
+
+Update `common/hooks/base/01-unattended-upgrades.hook.chroot` so the full `50unattended-upgrades` block becomes:
+```bash
+cat > /etc/apt/apt.conf.d/50unattended-upgrades << 'EOF'
+Unattended-Upgrade::Allowed-Origins {
+    "${distro_id}:${distro_codename}-security";
+    "ChaoticEvil:stable";
+};
+Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+Unattended-Upgrade::MinimalSteps "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+EOF
+```
+
+With this in place, any time the GitHub Actions workflow publishes a new `chaoticevil-branding` version, existing installs receive it silently on their next daily `unattended-upgrades` run.
+
+---
+
+## Appendix A — APT Repo Hosting Alternatives
+
+The steps above use GitHub Pages. If you need an alternative, the three options below are fully workable replacements. Only the hosting layer changes — the `.deb` packaging and `reprepro` tooling are identical.
+
+### Option 1: Self-hosted VPS with nginx
+
+**Best when:** You already have a VPS for ISO hosting and want everything under one domain.
+
+```bash
+# On the VPS:
+sudo apt install reprepro nginx
+sudo mkdir -p /var/www/apt/conf
+
+cat << 'EOF' | sudo tee /var/www/apt/conf/distributions
+Origin: ChaoticEvil
+Label: ChaoticEvil
+Codename: stable
+Architectures: amd64 arm64 all
+Components: main
+Description: ChaoticEvil package repository
+SignWith: YOUR_GPG_KEY_ID
+EOF
+
+# Add a .deb
+sudo reprepro -b /var/www/apt includedeb stable output/chaoticevil-branding_1.0.0_all.deb
+
+# Export signing key for users
+gpg --export --armor YOUR_GPG_KEY_ID | sudo tee /var/www/apt/chaoticevil-archive-keyring.asc
+```
+
+Add to nginx server block:
+```nginx
+location /apt/ {
+    root /var/www;
+    autoindex on;
+}
+```
+
+In `common/archives/chaoticevil.list.chroot`, use:
+```
+deb [signed-by=/usr/share/keyrings/chaoticevil-archive-keyring.gpg] https://pkg.chaoticevil.thzero.com/apt stable main
+```
+
+Deploy via GitHub Actions by SSHing into the VPS and running `reprepro includedeb` as part of the release workflow.
+
+---
+
+### Option 2: Google Cloud — Cloud Run + Cloud Storage
+
+**Best when:** You want zero server management, global CDN, and pay-per-use pricing.
+
+**Architecture:** A Cloud Storage bucket holds the repo files. Cloud Run (or just a storage bucket with public access) serves them over HTTPS.
+
+```bash
+# Create a GCS bucket
+gcloud storage buckets create gs://chaoticevil-apt \
+  --location=US \
+  --uniform-bucket-level-access
+
+# Make it publicly readable
+gcloud storage buckets add-iam-policy-binding gs://chaoticevil-apt \
+  --member=allUsers \
+  --role=roles/storage.objectViewer
+
+# Upload repo files (run reprepro locally first, then sync)
+gcloud storage rsync apt-repo/ gs://chaoticevil-apt/ --recursive
+```
+
+GCS public buckets are served at:
+```
+https://storage.googleapis.com/chaoticevil-apt/
+```
+
+To use a custom domain (`pkg.chaoticevil.thzero.com`), point a CNAME at `c.storage.googleapis.com` and configure the bucket name to match the domain.
+
+**GitHub Actions deployment:**
+```yaml
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Sync apt repo to GCS
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: apt-repo/
+          destination: chaoticevil-apt
+```
+
+> **Secrets required**: `GCP_SA_KEY` — a GCP service account key with `storage.objectAdmin` on the bucket.
+
+**Cost**: GCS storage is ~$0.02/GB/month. A branding `.deb` repo will stay well under $1/month.
+
+---
+
+### Option 3: Cloudflare Pages
+
+**Best when:** You already use Cloudflare for DNS and want free global CDN with DDoS protection automatically.
+
+Cloudflare Pages serves static files from a GitHub repo, identical to GitHub Pages but routed through Cloudflare's network.
+
+**Setup:**
+1. Go to Cloudflare Dashboard → Pages → Create a project
+2. Connect to your GitHub repo
+3. Set branch: `gh-pages`, build command: *(none — it's pre-built)*, output directory: `/`
+4. Add a custom domain: `pkg.chaoticevil.thzero.com`
+
+The GitHub Actions workflow from Step 2.5.3 is **unchanged** — it still pushes to `gh-pages`. Cloudflare Pages picks up the push automatically and deploys within seconds.
+
+In `common/archives/chaoticevil.list.chroot`, use your custom domain:
+```
+deb [signed-by=/usr/share/keyrings/chaoticevil-archive-keyring.gpg] https://pkg.chaoticevil.thzero.com stable main
+```
+
+**Advantages over raw GitHub Pages:**
+- Custom domain with automatic TLS (no VPS needed)
+- Global CDN — faster `apt update` worldwide
+- DDoS protection built in
+- Cloudflare Analytics for download stats
+
+**Limitations:**
+- 500 deployments/month on the free plan (well within limit for a small distro)
+- 25 MB max per file (not a concern for `.deb` metadata files; packages are in `pool/`)
 
 ---
 

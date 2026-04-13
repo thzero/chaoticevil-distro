@@ -268,28 +268,35 @@ Example: moving from Ubuntu 24.04 (noble) → 26.04 (next LTS codename, TBD).
 git checkout main
 git checkout -b release/2.0
 
-# 2. Update lb-config in all editions
+# 2. Update distro.conf — single source of truth for branding and Ubuntu base
+#    Change: UBUNTU_CODENAME="noble"
+#    To:     UBUNTU_CODENAME="<next-codename>"
+#    Also bump: DISTRO_VERSION="2.0"
+#    Then propagate changes to all docs and build configs:
+./scripts/apply-branding.sh --apply
+
+# 3. Update lb-config in all editions (if not covered by apply-branding.sh)
 #    Change: --distribution noble
 #    To:     --distribution <next-codename>
 
-# 3. Update sources.list
+# 4. Update sources.list
 #    Change noble → <next-codename>
 
-# 4. Update os-release
-#    VERSION="2.0"  PRETTY_NAME="MyDistro 2.0"
+# 5. Update os-release
+#    VERSION="2.0"  PRETTY_NAME="ChaoticEvil 2.0"
 
-# 5. Test build
+# 6. Test build
 make server ARCH=amd64
 # Fix any package changes (new names, removed packages, etc.)
 
 make desktop ARCH=amd64
 make developer ARCH=amd64
 
-# 6. Verify Calamares still works (may need config updates for new Ubuntu)
+# 7. Verify Calamares still works (may need config updates for new Ubuntu)
 
-# 7. Full test pass — all three editions, both arches
+# 8. Full test pass — all three editions, both arches
 
-# 8. PR → main → tag v2.0
+# 9. PR → main → tag v2.0
 ```
 
 ### Keep the 1.x branch alive
@@ -371,12 +378,100 @@ Before publishing the first public release, verify:
 
 ---
 
+---
+
+## Part C: Pushing Updates to Installed Users
+
+---
+
+## Step 6.10 — Releasing a Branding or Config Update
+
+ISO rebuilds deliver updates to new installs. The custom apt repo (set up in Phase 2 Step 2.5) delivers updates to **existing installs** via `apt upgrade` / `unattended-upgrades`.
+
+Use this process any time you change wallpapers, Plymouth theme, LightDM config, Flatpak app lists, or any other ChaoticEvil-specific file.
+
+```bash
+# 1. Make your changes to the branding files in packages/chaoticevil-branding/
+
+# 2. Bump the version in packages/chaoticevil-branding/DEBIAN/control
+#    Version: 1.0.0  →  1.0.1
+
+# 3. Commit and push — or create a GitHub Release
+#    The publish-apt.yml workflow (Phase 2 Step 2.5.3) triggers automatically,
+#    builds the .deb, runs reprepro, and deploys to GitHub Pages.
+git add packages/chaoticevil-branding/
+git commit -m "release: chaoticevil-branding 1.0.1"
+git push origin main
+# (or trigger via a GitHub Release, which also runs the release ISO build)
+```
+
+Existing users receive the update:
+- **Automatically**: `unattended-upgrades` runs daily and applies it silently
+- **Manually**: `sudo apt update && sudo apt upgrade`
+
+> If you're using an alternative hosting backend (VPS, GCP, Cloudflare), see [Phase 2 Appendix A](../phases/PHASE2_BASE_SYSTEM.md#appendix-a--apt-repo-hosting-alternatives) for the equivalent deployment step.
+
+### What to put in `chaoticevil-branding`
+
+| File type | Path in package | When to update |
+|---|---|---|
+| Wallpaper | `usr/share/backgrounds/chaoticevil/` | New release art |
+| Plymouth theme files | `usr/share/plymouth/themes/chaoticevil/` | Boot splash changes |
+| LightDM greeter config | `etc/lightdm/lightdm-gtk-greeter.conf` | Login screen changes |
+| XFCE defaults | `etc/skel/.config/xfce4/` | Desktop default changes |
+| MOTD / login banner | `etc/motd` | Messaging changes |
+| Flatpak app list | `usr/lib/chaoticevil/flatpak-apps.list` | Add/remove apps |
+
+### What NOT to put in `chaoticevil-branding`
+
+- Packages that are already in the Ubuntu repos — let `apt` manage those
+- Binary tools or libraries — make a separate package for those
+- Anything that requires a reboot to take effect without user awareness
+
+---
+
+## Step 6.11 — Adding or Removing Flatpak Apps for Existing Users
+
+Flatpak apps are installed by a post-install script during the Calamares install session. New users get whatever is in the script at their install time. Existing users do **not** automatically get new apps — they only get updates to apps they already have.
+
+To push a new Flatpak app to existing users:
+
+**Option A — Ship a systemd oneshot service** (recommended)
+
+Add to `chaoticevil-branding` package:
+
+`usr/lib/systemd/system/chaoticevil-flatpak-provision.service`:
+```ini
+[Unit]
+Description=ChaoticEvil Flatpak provisioning
+ConditionPathExists=!/var/lib/chaoticevil/flatpak-provisioned-1.0.1
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/chaoticevil/flatpak-provision.sh
+ExecStartPost=/bin/bash -c 'mkdir -p /var/lib/chaoticevil && touch /var/lib/chaoticevil/flatpak-provisioned-1.0.1'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The stamp file (`flatpak-provisioned-1.0.1`) ensures the service only runs once after the package update, not on every boot.
+
+**Option B — Document it** (simpler)
+
+Announce new apps in release notes. Users who want them run `flatpak install flathub <app-id>` manually.
+
+---
+
 ## Maintenance Calendar Summary
 
 | Frequency | Task |
 |---|---|
 | Monthly | Rebuild ISOs (picks up latest packages), review Flatpak app IDs |
 | Per Ubuntu advisory | Check if advisory affects your packages; rebuild if critical |
+| Per branding/config change | Bump `chaoticevil-branding` version, push to apt repo |
 | Per point release (every 3–6 months) | Update version strings, PR → main → tag |
 | Per Ubuntu LTS (every 2 years) | Rebase on new LTS codename, major version bump |
 | Ongoing | Monitor component release pages for breaking changes |
