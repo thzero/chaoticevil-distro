@@ -1,0 +1,61 @@
+    Manes (CR 1/8): The lowest form; souls of evil creatures transformed.
+    Abyssal Chicken / Quasit (CR 1/4 - 1): Small pests or familiars.
+    Dretch (CR 1/4): Weak, repulsive, cowardly fodder.
+    Rutterkin (CR 2): Twisted, fearful creatures that hunt in packs. 
+
+Mid Rank (Lesser - Elite Soldiers) 
+
+    Babau (CR 4): Thin, acidic, intelligent hunters.
+    Barlgura (CR 5): Apelike, muscular, and aggressive.
+    Vrock (CR 6): Large, vulture-like, and screeching.
+    Chasme (CR 6): Flying, buzzing insectoid demons.
+    Hezrou (CR 8): Large toad-like front-line soldiers. 
+
+High Rank (Greater - Commanders) 
+
+    Marilith (CR 16): Six-armed snake-woman tactical commanders.
+    Nalfeshnee (CR 13): Ape-pig hybrid monsters that hunt in high-level adventures.
+    Glabrezu (CR 13): Goat-headed tempters that offer deals.
+    Goristro (CR 17): Massive hulking minotaurs used as living siege engines. 
+
+Highest Rank (Archdemons & Lords) 
+
+    Balor (CR 19): Fire-wreathed command demons, often seen as the peak of typical demon kind.
+    Molydeus (CR 21+): Agents of the Demon Lords, tasked with enforcing their will.
+    Demon Lords (CR 20-30+): Examples include Demogorgon, Orcus, Graz'zt, and Baphomet. 
+
+Juiblex
+(CR 23): The Prince of Slime is often considered the "weakest" of the major lords. It is a mindless, bubbling mass that cares only for consuming matter, making it less dangerous than lords with complex schemes.
+Zuggtmoy
+(CR 23): Though she has a massive influence through fungal infection, her raw combat power is comparable to Juiblex
+. She is often Juiblex
+’s rival as they fight over the same "sludge" territory.
+Baphomet
+(CR 23): A savage brute of the Labyrinth. While physically terrifying, he lacks the cosmic influence or magical depth of those higher on the list.
+Fraz-Urb’luu
+(CR 23): On paper, his CR is the same as Baphomet
+, but he ranks higher because of his extreme cunning. He is the master of illusions; his power lies in the fact that you never truly know if you are fighting him or a dream.
+Yeenoghu
+(CR 24): The Beast of Butchery is a step up in raw aggression and has a massive, active following (Gnolls) that fuels his power through constant slaughter.
+Kostchtchie
+(CR 25): As the Lord of Giants, his physical strength is nearly unmatched. He has higher raw stats than many "true" demon lords due to his giant heritage and extreme durability.
+Malcanthet
+(Approx. CR 25–26): While she hasn't received a 5e stat block, she is the Queen of the Succubi. In lore, she is a master manipulator who has survived for eons by outsmarting and seducing other lords. She is often considered a peer to Graz'zt.
+Graz’zt
+(CR 24+): While his 5e CR is listed as 24, he is widely considered one of the most powerful because he rules three Abyssal layers (The Triple Realm). His influence and intellect make him a much greater threat than his CR suggests.
+Pazuzu
+(Lore-based High Tier): As an ancient Obyrith, Pazuzu
+is incredibly hard to kill and has a presence across many planes. He doesn't seek the "Prince of Demons" title, which is the only reason he isn't at the very top.
+Orcus
+(CR 26): The Prince of Undeath is a powerhouse. With the Wand of Orcus, he can summon high-level undead (like Liches) at will, making him a one-man army.
+Demogorgon
+(CR 26): The official "Prince of Demons." He possesses two heads that act independently and is the symbol of ultimate chaos. In a direct fight, he is the apex predator of the tanar'ri.
+Obox-ob
+(Elder Power): Though he currently hides in the deep Abyss, he was the original Prince of Demons. His power is primordial and alien; if he ever regained his full strength, he would likely displace Demogorgon
+instantly.
+Dagon
+(Ancient Elder): Dagon
+is a "consigliere" to the Abyss itself. He is an Obyrith of such vast, oceanic power that even Demogorgon
+comes to him for advice. He is effectively untouchable in his deep-sea realm.
+Lolth
+(Greater Deity): While she is a Demon Lord (ruling the 66th layer, the Demonweb Pits), she is also a Full Goddess. Her divine rank puts her on a different plane of existence than most other lords; she has "Plot Armor" and power levels that standard mortal adventurers cannot hope to touch.
