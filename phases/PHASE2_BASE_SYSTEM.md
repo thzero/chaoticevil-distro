@@ -65,6 +65,88 @@ chmod +x common/hooks/base/01-unattended-upgrades.hook.chroot
 
 ---
 
+### Mainline kernel hook
+
+By default, live-build installs `linux-image-generic` (Ubuntu's standard kernel). To ship a mainline kernel from the [Ubuntu Kernel Archive](https://kernel.ubuntu.com/mainline/) instead, add a chroot hook that downloads and installs it during the build.
+
+**Why a hook and not a package list entry**: mainline builds are not in any apt repository — they are `.deb` files distributed directly from `kernel.ubuntu.com`.
+
+> **Secure Boot note**: Mainline builds are unsigned (`linux-image-unsigned-*`). VMs and machines with Secure Boot disabled boot fine. For physical hardware with Secure Boot enabled, you must either enroll the signing key or disable Secure Boot.
+
+Create `common/hooks/base/02-mainline-kernel.hook.chroot`:
+```bash
+#!/bin/bash
+# Install mainline Linux kernel from the Ubuntu Kernel Archive.
+# Replaces the default linux-image-generic installed by live-build.
+set -e
+
+ARCH=$(dpkg --print-architecture)
+KERNEL_VERSION="7.1"   # major.minor series — latest patch fetched automatically
+
+case "$ARCH" in
+    amd64) PKG_ARCH="amd64" ;;
+    arm64) PKG_ARCH="arm64" ;;
+    *) echo "Mainline kernel: unsupported arch '$ARCH', skipping."; exit 0 ;;
+esac
+
+BASE_URL="https://kernel.ubuntu.com/mainline"
+
+# Resolve the latest patch release in this series (excludes release candidates)
+LATEST=$(wget -qO- "${BASE_URL}/" \
+    | grep -o "v${KERNEL_VERSION}\.[0-9][0-9]*/" \
+    | sort -V | tail -1 | tr -d '/')
+
+[ -n "$LATEST" ] || { echo "ERROR: could not find mainline v${KERNEL_VERSION}.x on kernel.ubuntu.com"; exit 1; }
+echo "Mainline kernel: installing ${LATEST} (${PKG_ARCH})"
+
+DL_BASE="${BASE_URL}/${LATEST}"
+
+# Arch-independent headers live in the version root; arch-specific packages in subdir
+HDR_ALL=$(wget -qO- "${DL_BASE}/" \
+    | grep -o 'href="linux-headers[^"]*_all\.deb"' \
+    | sed 's/href="//;s/"$//' | head -1)
+
+PKGS_ARCH=$(wget -qO- "${DL_BASE}/${PKG_ARCH}/" \
+    | grep -o 'href="linux-[^"]*\.deb"' \
+    | sed 's/href="//;s/"$//' \
+    | grep -v 'lowlatency\|snapdragon\|cloud\|raspi')
+
+[ -n "$PKGS_ARCH" ] || { echo "ERROR: no packages found at ${DL_BASE}/${PKG_ARCH}/"; exit 1; }
+
+mkdir -p /tmp/mainline-kernel
+cd /tmp/mainline-kernel
+
+[ -n "$HDR_ALL" ] && wget -q "${DL_BASE}/${HDR_ALL}"
+for pkg in $PKGS_ARCH; do
+    wget -q "${DL_BASE}/${PKG_ARCH}/${pkg}"
+done
+
+dpkg -i /tmp/mainline-kernel/*.deb
+
+# Remove the generic Ubuntu kernel to avoid bootloader conflicts and free space
+apt-get remove -y --purge \
+    linux-image-generic linux-headers-generic \
+    linux-image-generic-hwe-24.04 linux-headers-generic-hwe-24.04 \
+    2>/dev/null || true
+apt-get autoremove -y
+
+# Pin mainline packages so future apt upgrades don't silently replace them
+dpkg -l | grep -E "^ii  linux-(image|headers|modules).*${KERNEL_VERSION}" \
+    | awk '{print $2}' | xargs apt-mark hold 2>/dev/null || true
+
+cd /
+rm -rf /tmp/mainline-kernel
+```
+
+Make it executable:
+```bash
+chmod +x common/hooks/base/02-mainline-kernel.hook.chroot
+```
+
+> The `KERNEL_VERSION="7.1"` line is a substitution target for `apply-branding.sh`. Set `KERNEL_MAINLINE_VERSION` in `distro.conf` and run `./scripts/apply-branding.sh --apply` to propagate the version into this hook.
+
+---
+
 ## Step 2.2 — Server Edition Packages
 
 Edit `editions/server/package-lists/server.list`:
@@ -764,6 +846,8 @@ git push origin dev
 
 - [ ] `common/package-lists/base.list` finalized
 - [ ] `common/hooks/base/01-unattended-upgrades.hook.chroot` created and executable
+- [ ] `common/hooks/base/02-mainline-kernel.hook.chroot` created and executable
+- [ ] Mainline kernel version confirmed in booted ISO: `uname -r` shows expected version
 - [ ] Server package list created, hardening hook created and executable
 - [ ] Desktop package list created with XFCE + Flatpak packages
 - [ ] Desktop setup hook created and executable
