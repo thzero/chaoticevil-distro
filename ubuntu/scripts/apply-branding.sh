@@ -46,6 +46,7 @@ declare -a SUBS=(
     "#888888|${COLOR_TEXT_SECONDARY}"
     "#2a2a4a|${COLOR_BUTTON_BG}"
     "KERNEL_VERSION=\"7\.1\"|KERNEL_VERSION=\"${KERNEL_MAINLINE_VERSION}\""
+    "trixie|${DEBIAN_CODENAME}"
 )
 
 # Only substitute pkg repo URL if one is set

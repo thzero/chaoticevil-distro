@@ -40,7 +40,7 @@ Every visible Ubuntu surface is replaced with ChaoticEvil visuals:
 - **LightDM** — custom login screen
 - **XFCE** — GTK theme, icon theme, wallpaper, desktop defaults
 
-All driven from a single [`distro.conf`](distro.conf) file. Change the name, colour, or version once — `./scripts/apply-branding.sh --apply` propagates it everywhere.
+All driven from a single [`distro.conf`](distro.conf) file. Change the name, colour, or version once — `./ubuntu/scripts/apply-branding.sh --apply` propagates it everywhere.
 
 ### Phase 4 — Installer
 Calamares (the visual installer used by Manjaro, Fedora, etc.) configured with ChaoticEvil branding and a post-install Flatpak provisioning step. After the user completes install, selected apps are automatically installed from Flathub.
@@ -92,12 +92,13 @@ Boot any of them on real hardware or a VM and you're in a working ChaoticEvil sy
 | File | Purpose |
 |---|---|
 | [`distro.conf`](distro.conf) | Master identity/branding config |
-| [`DISTRO_PLAN.md`](DISTRO_PLAN.md) | Full phase-by-phase plan with links |
-| [`scripts/apply-branding.sh`](scripts/apply-branding.sh) | Propagates distro.conf values everywhere |
-| [`scripts/phase0-host.sh`](scripts/phase0-host.sh) | Sets up the build VM on the host |
-| [`scripts/phase0-post-install.sh`](scripts/phase0-post-install.sh) | Completes VM setup after Ubuntu installs |
-| [`scripts/phase0-vm.sh`](scripts/phase0-vm.sh) | Mounts repo and installs build deps inside VM |
-| [`phases/PHASE0_ENVIRONMENT.md`](phases/PHASE0_ENVIRONMENT.md) | Build VM setup — manual + automated paths |
+| [`ubuntu/DISTRO_PLAN.md`](ubuntu/DISTRO_PLAN.md) | Full Ubuntu phase-by-phase plan with links |
+| [`debian/DISTRO_PLAN.md`](debian/DISTRO_PLAN.md) | Full Debian Testing phase-by-phase plan |
+| [`ubuntu/scripts/apply-branding.sh`](ubuntu/scripts/apply-branding.sh) | Propagates distro.conf values everywhere |
+| [`ubuntu/scripts/phase0-host.sh`](ubuntu/scripts/phase0-host.sh) | Sets up the build VM on the host |
+| [`ubuntu/scripts/phase0-post-install.sh`](ubuntu/scripts/phase0-post-install.sh) | Completes VM setup after Ubuntu installs |
+| [`ubuntu/scripts/phase0-vm.sh`](ubuntu/scripts/phase0-vm.sh) | Mounts repo and installs build deps inside VM |
+| [`ubuntu/phases/PHASE0_ENVIRONMENT.md`](ubuntu/phases/PHASE0_ENVIRONMENT.md) | Build VM setup — manual + automated paths |
 
 ---
 
