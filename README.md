@@ -31,14 +31,14 @@ A dedicated QEMU virtual machine that acts as the build box. One script installs
 Git repo layout, branch strategy (`main` / `dev` / `release/x.y`), Makefile build targets, and CI/CD skeleton.
 
 ### Phase 2 — Base system
-Which packages go in each edition. Common base (SSH, UFW, curl, etc.) is shared; each edition adds its own layer on top — Server gets fail2ban/htop/tmux, Desktop adds XFCE + LightDM + Flatpak, Developer stacks Git, Docker, Node, Python, and more.
+Which packages go in each edition. Common base (SSH, UFW, curl, etc.) is shared; each edition adds its own layer on top — Server gets fail2ban/htop/tmux, Desktop adds COSMIC + greetd + PipeWire + Flatpak, Developer stacks Git, Docker, Node, Python, and more.
 
 ### Phase 3 — Branding
 Every visible Ubuntu surface is replaced with ChaoticEvil visuals:
 - **GRUB** — themed bootloader
 - **Plymouth** — branded boot splash
-- **LightDM** — custom login screen
-- **XFCE** — GTK theme, icon theme, wallpaper, desktop defaults
+- **COSMIC greeter** — custom Wayland login screen (greetd + cosmic-greeter)
+- **COSMIC** — accent color, wallpaper, dark theme defaults via RON config seeds
 
 All driven from a single [`distro.conf`](distro.conf) file. Change the name, colour, or version once — `./ubuntu/scripts/apply-branding.sh --apply` propagates it everywhere.
 
@@ -98,7 +98,7 @@ Boot any of them on real hardware or a VM and you're in a working ChaoticEvil sy
 | [`ubuntu/scripts/phase0-host.sh`](ubuntu/scripts/phase0-host.sh) | Sets up the build VM on the host |
 | [`ubuntu/scripts/phase0-post-install.sh`](ubuntu/scripts/phase0-post-install.sh) | Completes VM setup after Ubuntu installs |
 | [`ubuntu/scripts/phase0-vm.sh`](ubuntu/scripts/phase0-vm.sh) | Mounts repo and installs build deps inside VM |
-| [`ubuntu/phases/PHASE0_ENVIRONMENT.md`](ubuntu/phases/PHASE0_ENVIRONMENT.md) | Build VM setup — manual + automated paths |
+| [`PHASE0_ENVIRONMENT.md`](PHASE0_ENVIRONMENT.md) | Build VM setup — shared by both tracks |
 
 ---
 

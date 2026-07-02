@@ -2,7 +2,7 @@
 
 **Goal**: Same as the Ubuntu plan — `make desktop ARCH=amd64` produces a bootable Debian-based ISO.
 
-**Prerequisite**: [Phase 0](../../ubuntu/phases/PHASE0_ENVIRONMENT.md) complete — build VM running, repo mounted inside VM.
+**Prerequisite**: [Phase 0](../../PHASE0_ENVIRONMENT.md) complete — build VM running, repo mounted inside VM.
 
 **Differences from [ubuntu/phases/PHASE1_FOUNDATION.md](../../ubuntu/phases/PHASE1_FOUNDATION.md)**:
 - `lb config` uses Debian mirrors and `trixie`

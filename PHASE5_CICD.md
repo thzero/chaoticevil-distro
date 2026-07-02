@@ -2,7 +2,7 @@
 
 **Goal**: Every push to `dev` automatically builds all 6 ISOs (3 editions × 2 arches). Tagged releases publish ISOs with checksums and signatures.
 
-**Prerequisite**: [Phase 4: Installer](PHASE4_INSTALLER.md) complete — all editions install correctly.
+**Prerequisite**: Phase 4: Installer complete for your target track — [Ubuntu](ubuntu/phases/PHASE4_INSTALLER.md) | [Debian](debian/phases/PHASE4_INSTALLER.md)
 
 ---
 
@@ -489,4 +489,4 @@ Open a PR from `dev` → `main`. Once the PR workflows pass, merge.
 
 ## Next Step
 
-→ [Phase 6: Distribution](PHASE6_DISTRIBUTION.md)
+→ [Phase 6: Distribution](PHASE6_DISTRIBUTION.md) (shared)

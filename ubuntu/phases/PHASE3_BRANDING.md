@@ -252,238 +252,115 @@ chmod +x common/hooks/base/03-plymouth-theme.hook.chroot
 
 ---
 
-## Step 3.4 — LightDM Login Screen
+## Step 3.4 — COSMIC Greeter (Login Screen)
 
-### `common/includes.chroot/etc/lightdm/lightdm-gtk-greeter.conf`
-```ini
-[greeter]
-background=/usr/share/backgrounds/mydistro/wallpaper.png
-theme-name=MyDistro
-icon-theme-name=MyDistro
-font-name=Noto Sans 11
-xft-antialias=true
-xft-hintstyle=slight
-logo=/usr/share/pixmaps/mydistro-logo.png
-indicators=~host;~spacer;~clock;~spacer;~session;~language;~a11y;~power
-clock-format=%A, %B %e  %H:%M
-user-background=false
-hide-user-image=false
+COSMIC uses **greetd** as the display manager with **cosmic-greeter** as the greeter UI. The wallpaper shown on the greeter is controlled by the same backgrounds system as the desktop.
+
+### greetd autologin config for live session
+
+`common/includes.chroot/etc/greetd/config.toml`:
+```toml
+[terminal]
+vt = 1
+
+[default_session]
+command = "cosmic-greeter"
+user = "greeter"
 ```
+
+> The `greeter` system user is created by the `01-desktop-setup.hook.chroot` from Phase 2.
+
+### COSMIC greeter background
+
+COSMIC greeter picks up the same wallpaper set for the desktop. Place your wallpaper at:
+```
+common/includes.chroot/usr/share/backgrounds/mydistro/wallpaper.png
+```
+
+The greeter reads the system-wide COSMIC background config. Seed it for all users via skel (see Step 3.5).
 
 ---
 
-## Step 3.5 — XFCE Theme
+## Step 3.5 — COSMIC Theme and Desktop Defaults
 
-### GTK + Window Manager Theme
+COSMIC stores its configuration in RON format (Rust Object Notation) files under `~/.config/cosmic/`. System-wide defaults are seeded via `/etc/skel/.config/cosmic/` so every new user starts with your branded settings.
 
-Create the theme directory in your repo and copy it into the chroot overlay:
+### COSMIC config directory structure
 ```
-common/includes.chroot/usr/share/themes/MyDistro/
-├── gtk-2.0/
-│   └── gtkrc
-├── gtk-3.0/
-│   ├── gtk.css
-│   └── gtk-dark.css (optional)
-└── xfwm4/
-    ├── themerc
-    └── (button PNG images)
-```
-
-#### Strategy: inherit Greybird, override colors
-
-Rather than building from zero, inherit the Greybird theme (Xubuntu default) and override your brand colors.
-
-**`gtk-3.0/gtk.css`**
-```css
-/* Import Greybird as base */
-@import url("/usr/share/themes/Greybird/gtk-3.0/gtk.css");
-
-/* Override brand colors */
-@define-color theme_bg_color #1a1a2e;
-@define-color theme_fg_color #e0e0e0;
-@define-color theme_selected_bg_color #4a90d9;
-@define-color theme_selected_fg_color #ffffff;
-@define-color theme_base_color #16213e;
-@define-color theme_text_color #e0e0e0;
-@define-color theme_button_bg_color #2a2a4a;
+common/includes.chroot/etc/skel/.config/cosmic/
+├── com.system76.CosmicBackground/v1/
+│   └── state                    # wallpaper path
+├── com.system76.CosmicTheme.Dark/v1/
+│   └── state                    # accent color + palette
+├── com.system76.CosmicTheme.Light/v1/
+│   └── state
+└── com.system76.CosmicSettings/v1/
+    └── state                    # dark mode preference
 ```
 
-**`xfwm4/themerc`**
-```ini
-# Inherit from Greybird, override accent color
-active_border_color=#4a90d9
-active_text_color=#ffffff
-active_mid_color=#2a2a4a
-inactive_border_color=#333333
-inactive_text_color=#888888
-inactive_mid_color=#222222
-title_font=Noto Sans Bold 10
+### Background config
+`common/includes.chroot/etc/skel/.config/cosmic/com.system76.CosmicBackground/v1/state`:
+```ron
+(version: 1, entries: [(output: "all", source: File("/usr/share/backgrounds/mydistro/wallpaper.png"), filter: Zoom, rotation_frequency: 0)])
 ```
 
-#### Install Greybird as build dependency
-Add to `editions/desktop/package-lists/desktop.list` and `editions/developer/package-lists/developer.list`:
-```
-greybird-gtk-theme
-```
-
-### Icon Theme
-
-For a simple branded icon theme that inherits from an existing one, create:
-
-```
-common/includes.chroot/usr/share/icons/MyDistro/
-└── index.theme
-```
-
-**`index.theme`**
-```ini
-[Icon Theme]
-Name=MyDistro
-Comment=MyDistro Icon Theme
-Inherits=Papirus,hicolor
-Directories=
-
-[scalable/apps]
-Size=48
-MinSize=8
-MaxSize=512
-Type=Scalable
-Context=Applications
+### Dark theme + accent color
+`common/includes.chroot/etc/skel/.config/cosmic/com.system76.CosmicTheme.Dark/v1/state`:
+```ron
+(theme: (
+    name: "ChaoticEvil",
+    background: (base: (0.1, 0.1, 0.18, 1.0), component: (0.13, 0.13, 0.2, 1.0), divider: (0.2, 0.2, 0.3, 1.0), on: (0.87, 0.87, 0.87, 1.0)),
+    primary: (base: (0.16, 0.13, 0.24, 1.0), component: (0.19, 0.16, 0.27, 1.0), divider: (0.25, 0.22, 0.34, 1.0), on: (0.87, 0.87, 0.87, 1.0)),
+    secondary: (base: (0.22, 0.22, 0.38, 1.0), component: (0.25, 0.25, 0.4, 1.0), divider: (0.3, 0.3, 0.45, 1.0), on: (0.87, 0.87, 0.87, 1.0)),
+    accent: (0.29, 0.56, 0.85, 1.0),
+    success: (0.27, 0.73, 0.35, 1.0),
+    warning: (0.93, 0.69, 0.13, 1.0),
+    destructive: (0.9, 0.3, 0.3, 1.0),
+    is_dark: true,
+))
 ```
 
-Add to package lists:
-```
-papirus-icon-theme
-```
+> The `accent` value `(0.29, 0.56, 0.85, 1.0)` is `#4a90d9` in RGBA float form — matches `COLOR_ACCENT` in `distro.conf`.
 
-### XFCE Default Settings
-
-Create the XFCE configuration defaults. These are XML files in perchannel-xml format.
-
-**`common/includes.chroot/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml`**
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<channel name="xsettings" version="1.0">
-  <property name="Net" type="empty">
-    <property name="ThemeName" type="string" value="MyDistro"/>
-    <property name="IconThemeName" type="string" value="MyDistro"/>
-    <property name="EnableEventSounds" type="bool" value="false"/>
-  </property>
-  <property name="Xft" type="empty">
-    <property name="DPI" type="int" value="-1"/>
-    <property name="Antialias" type="int" value="1"/>
-    <property name="Hinting" type="int" value="1"/>
-    <property name="HintStyle" type="string" value="hintslight"/>
-    <property name="RGBA" type="string" value="rgb"/>
-  </property>
-</channel>
+### Dark mode preference
+`common/includes.chroot/etc/skel/.config/cosmic/com.system76.CosmicSettings/v1/state`:
+```ron
+(version: 1, color_scheme: Dark)
 ```
 
-**`common/includes.chroot/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml`**
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<channel name="xfce4-desktop" version="1.0">
-  <property name="backdrop" type="empty">
-    <property name="screen0" type="empty">
-      <property name="monitorVirtual-1" type="empty">
-        <property name="workspace0" type="empty">
-          <property name="last-image" type="string"
-            value="/usr/share/backgrounds/mydistro/wallpaper.png"/>
-          <property name="image-style" type="int" value="5"/>
-        </property>
-      </property>
-    </property>
-  </property>
-</channel>
-```
+### Hook to propagate skel to existing live session user
 
-**`common/includes.chroot/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml`**
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<channel name="xfwm4" version="1.0">
-  <property name="general" type="empty">
-    <property name="theme" type="string" value="MyDistro"/>
-    <property name="title_font" type="string" value="Noto Sans Bold 10"/>
-    <property name="button_layout" type="string" value="O|HMC"/>
-  </property>
-</channel>
-```
-
-**`common/includes.chroot/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml`**
-
-This controls the panel layout. Start with a taskbar-style layout:
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<channel name="xfce4-panel" version="1.0">
-  <property name="configver" type="int" value="2"/>
-  <property name="panels" type="array">
-    <value type="int" value="1"/>
-  </property>
-  <property name="panel-1" type="empty">
-    <property name="position" type="string" value="p=6;x=0;y=0"/>
-    <property name="length" type="uint" value="100"/>
-    <property name="position-locked" type="bool" value="true"/>
-    <property name="size" type="uint" value="30"/>
-    <property name="plugin-ids" type="array">
-      <value type="int" value="1"/>
-      <value type="int" value="2"/>
-      <value type="int" value="3"/>
-      <value type="int" value="4"/>
-      <value type="int" value="5"/>
-      <value type="int" value="6"/>
-    </property>
-  </property>
-  <property name="plugins" type="empty">
-    <property name="plugin-1" type="string" value="whiskermenu"/>
-    <property name="plugin-2" type="string" value="separator"/>
-    <property name="plugin-3" type="string" value="tasklist"/>
-    <property name="plugin-4" type="string" value="separator">
-      <property name="expand" type="bool" value="true"/>
-      <property name="style" type="uint" value="0"/>
-    </property>
-    <property name="plugin-5" type="string" value="systray"/>
-    <property name="plugin-6" type="string" value="clock"/>
-  </property>
-</channel>
-```
-
----
-
-## Step 3.6 — Apply Defaults for New Users (skel)
-
-Settings in `/etc/xdg/` are system-wide defaults, but XFCE also reads from `~/.config/xfce4/`. Use skel to seed defaults for new user accounts:
-
-```
-common/includes.chroot/etc/skel/.config/xfce4/
-├── xfconf/xfce-perchannel-xml/
-│   ├── xsettings.xml        (copy from /etc/xdg/xfce4/xfconf/...)
-│   ├── xfce4-desktop.xml
-│   └── xfwm4.xml
-└── panel/
-    └── (panel config, if needed beyond xfce4-panel.xml)
-```
-
-Create a hook to copy these for the live session user too:
-
-**`common/hooks/base/04-xfce-defaults.hook.chroot`**
+Create `common/hooks/base/04-cosmic-defaults.hook.chroot`:
 ```bash
 #!/bin/bash
 set -e
 
-# Ensure live user inherits branded defaults
-# The actual live user is created at boot, so skel handles it
-# Just ensure xdg dirs exist
-mkdir -p /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml
+# Ensure skel cosmic config dir exists
+mkdir -p /etc/skel/.config/cosmic
 
-cp /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/*.xml \
-   /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/ 2>/dev/null || true
-
-# Update icon cache
-gtk-update-icon-cache -f /usr/share/icons/MyDistro/ 2>/dev/null || true
-gtk-update-icon-cache -f /usr/share/icons/hicolor/ 2>/dev/null || true
+# The live session user is created at boot time from skel,
+# so no further action needed here. The hook just validates the skel tree.
+find /etc/skel/.config/cosmic -type f | sort
 ```
 ```bash
-chmod +x common/hooks/base/04-xfce-defaults.hook.chroot
+chmod +x common/hooks/base/04-cosmic-defaults.hook.chroot
+```
+
+---
+
+## Step 3.6 — Seed COSMIC Defaults via skel
+
+COSMIC config is per-user. Seeds land in `/etc/skel/` so every new user account (including the Calamares-created install user) starts with branded defaults.
+
+The `state` files were written in Step 3.5. This step just validates the skel tree and copies it for the live session user (who is also seeded from skel at live-boot time).
+
+Directory as it should exist:
+```
+common/includes.chroot/etc/skel/.config/cosmic/
+├── com.system76.CosmicBackground/v1/state
+├── com.system76.CosmicTheme.Dark/v1/state
+├── com.system76.CosmicTheme.Light/v1/state
+└── com.system76.CosmicSettings/v1/state
 ```
 
 ---
@@ -520,13 +397,14 @@ qemu-system-x86_64 \
 
 ### Visual checklist
 - [ ] GRUB menu shows custom background and theme
-- [ ] Plymouth shows logo during boot (may be brief — add `plymouth.debug` to kernel cmdline to slow it down)
-- [ ] LightDM shows branded wallpaper and logo
-- [ ] After login: XFCE desktop shows branded wallpaper
-- [ ] Window decorations use MyDistro theme colors
-- [ ] Icons use MyDistro icon theme (inheriting Papirus)
-- [ ] Panel is configured correctly (app menu, taskbar, clock)
-- [ ] `cat /etc/os-release` shows MyDistro
+- [ ] Plymouth shows logo during boot
+- [ ] COSMIC greeter shows branded wallpaper and logo
+- [ ] After login: COSMIC desktop shows branded wallpaper
+- [ ] Accent color matches `#4a90d9` (check System Settings → Appearance)
+- [ ] Dark mode is active by default
+- [ ] Panel is configured (cosmic-panel)
+- [ ] `cat /etc/os-release` shows ChaoticEvil
+- [ ] `pactl info` confirms PipeWire is the audio server
 
 ---
 
@@ -534,7 +412,7 @@ qemu-system-x86_64 \
 
 ```bash
 git add .
-git commit -m "feat: add branding (GRUB, Plymouth, LightDM, XFCE theme and defaults)"
+git commit -m "feat: add branding (GRUB, Plymouth, COSMIC greeter, COSMIC theme and defaults)"
 git push origin dev
 ```
 
@@ -550,9 +428,10 @@ git push origin dev
 - [ ] GRUB hook created and executable
 - [ ] Plymouth theme script and `.plymouth` file created
 - [ ] Plymouth registration hook created and executable
-- [ ] LightDM greeter config written with branded wallpaper and logo
-- [ ] GTK theme created (inheriting Greybird)
-- [ ] Icon theme created (inheriting Papirus)
+- [ ] COSMIC greeter config written (`/etc/greetd/config.toml` pointing to `cosmic-greeter`)
+- [ ] COSMIC background RON config seeded in `/etc/skel/.config/cosmic/`
+- [ ] COSMIC dark theme RON config with accent `#4a90d9` seeded in skel
+- [ ] `04-cosmic-defaults.hook.chroot` created and executable
 - [ ] XFCE perchannel-xml defaults created (xsettings, desktop, xfwm4, panel)
 - [ ] Skel populated with XFCE defaults
 - [ ] XFCE defaults hook created and executable

@@ -2,7 +2,7 @@
 
 **Goal**: ISOs are publicly hosted and verifiable. A clear maintenance process keeps the distro up to date across Ubuntu LTS cycles.
 
-**Prerequisite**: [Phase 5: CI/CD](PHASE5_CICD.md) complete — automated builds and releases working.
+**Prerequisite**: [Phase 5: CI/CD](PHASE5_CICD.md) complete — automated builds and releases working. (shared phase)
 
 ---
 

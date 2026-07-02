@@ -51,7 +51,7 @@ An alternative to the Ubuntu-based plan in [DISTRO_PLAN.md](DISTRO_PLAN.md), tar
 
 The build host runs Ubuntu. `live-build` on Ubuntu targeting Debian is fully supported — `debootstrap` handles the bootstrap regardless of the build host distro.
 
-→ See [ubuntu/phases/PHASE0_ENVIRONMENT.md](../ubuntu/phases/PHASE0_ENVIRONMENT.md)
+→ See [PHASE0_ENVIRONMENT.md](../PHASE0_ENVIRONMENT.md)
 
 ---
 

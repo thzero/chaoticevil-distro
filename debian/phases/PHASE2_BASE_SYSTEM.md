@@ -10,6 +10,7 @@
 - Mainline kernel hook targets `linux-image-${PKG_ARCH}` not `linux-image-generic`
 - Desktop uses PipeWire instead of PulseAudio
 - No `calamares-settings-ubuntu` or `calamares-data` (Phase 4 handles Calamares fully)
+- **DE: XFCE4 + LightDM (X11)** — COSMIC is Ubuntu/System76-PPA only and not available in Debian trixie repos. XFCE remains the default for this track. If Wayland is required on Debian, GNOME is Wayland-native and fully available in trixie (`gnome-session`, `gdm3`).
 
 ---
 

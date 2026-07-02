@@ -107,42 +107,26 @@ vim
 
 **`editions/desktop/package-lists/desktop.list`**
 ```
-cosmic-session
-cosmic-comp
-cosmic-panel
-cosmic-settings
-cosmic-files
-cosmic-terminal
-cosmic-launcher
-cosmic-greeter
-greetd
+xfce4
+xfce4-goodies
+lightdm
+lightdm-gtk-greeter
 network-manager-gnome
 xdg-user-dirs
 flatpak
-xdg-desktop-portal-cosmic
-pipewire
-pipewire-pulse
-wireplumber
+xdg-desktop-portal-gtk
 ```
 
 **`editions/developer/package-lists/developer.list`**
 ```
-cosmic-session
-cosmic-comp
-cosmic-panel
-cosmic-settings
-cosmic-files
-cosmic-terminal
-cosmic-launcher
-cosmic-greeter
-greetd
+xfce4
+xfce4-goodies
+lightdm
+lightdm-gtk-greeter
 network-manager-gnome
 xdg-user-dirs
 flatpak
-xdg-desktop-portal-cosmic
-pipewire
-pipewire-pulse
-wireplumber
+xdg-desktop-portal-gtk
 git
 gh
 build-essential
@@ -198,24 +182,32 @@ GRUB_DISTRIBUTOR="MyDistro"
 └── progress bar assets
 ```
 
-#### COSMIC Greeter (login screen)
+#### LightDM (login screen)
 
-```toml
-# /etc/greetd/config.toml
-[terminal]
-vt = 1
-
-[default_session]
-command = "cosmic-greeter"
-user = "greeter"
+```ini
+# /etc/lightdm/lightdm-gtk-greeter.conf
+[greeter]
+background=/usr/share/backgrounds/mydistro/wallpaper.png
+theme-name=MyDistro
+icon-theme-name=MyDistro
+logo=/usr/share/mydistro/logo.png
 ```
 
-#### COSMIC Theme defaults
+#### XFCE
 
-Seeded per-user via `/etc/skel/.config/cosmic/`. Key files:
-- `com.system76.CosmicBackground/v1/state` — wallpaper path
-- `com.system76.CosmicTheme.Dark/v1/state` — accent color `#4a90d9`, dark palette
-- `com.system76.CosmicSettings/v1/state` — `color_scheme: Dark`
+- GTK theme — inherit Greybird, override colors and assets
+- Icon theme — inherit Papirus or Hicolor, add custom icons
+- Default wallpaper via `xfce4-desktop.xml`
+- Panel layout via `xfce4-panel.xml`
+
+```
+/usr/share/themes/MyDistro/
+├── gtk-2.0/gtkrc
+├── gtk-3.0/gtk.css
+└── xfwm4/
+    ├── themerc
+    └── *.xpm
+```
 
 #### os-release
 
@@ -533,7 +525,7 @@ gpg --armor --detach-sign SHA256SUMS
 |---|---|
 | 1–2 | Repo scaffolded, base `lb build` produces bootable ISO |
 | 3 | All three editions build successfully |
-| 4 | Branding applied (GRUB, Plymouth, COSMIC, greetd) |
+| 4 | Branding applied (GRUB, Plymouth, XFCE, LightDM) |
 | 5 | Calamares installer works, Flatpak post-install scripts tested |
 | 6 | CI/CD pipeline live, ARM builds passing |
 | 7+ | Hardware testing, polish, first public release |
@@ -546,10 +538,10 @@ Each phase has a full step-by-step guide with every command, config file, and ve
 
 | Phase | Document | Contents |
 |---|---|---|
-| 0 — Environment | [PHASE0_ENVIRONMENT.md](../PHASE0_ENVIRONMENT.md) | QEMU build VM, snapshots, shared repo mount |
-| 1 — Foundation | [phases/PHASE1_FOUNDATION.md](phases/PHASE1_FOUNDATION.md) | Git repo, build deps, scaffold, first ISO |
-| 2 — Base System | [phases/PHASE2_BASE_SYSTEM.md](phases/PHASE2_BASE_SYSTEM.md) | Package lists, hooks, ARM64 builds |
-| 3 — Branding | [phases/PHASE3_BRANDING.md](phases/PHASE3_BRANDING.md) | GRUB, Plymouth, COSMIC greeter, COSMIC theme |
-| 4 — Installer | [phases/PHASE4_INSTALLER.md](phases/PHASE4_INSTALLER.md) | Calamares config, Flatpak post-install scripts |
-| 5 — CI/CD | [PHASE5_CICD.md](../PHASE5_CICD.md) | GitHub Actions, signing, release workflow — shared |
-| 6 — Distribution | [PHASE6_DISTRIBUTION.md](../PHASE6_DISTRIBUTION.md) | Hosting, maintenance schedule, LTS rebase — shared |
+| 0 — Environment | [PHASE0_ENVIRONMENT.md](PHASE0_ENVIRONMENT.md) | QEMU build VM, snapshots, shared repo mount |
+| 1 — Foundation | [phases/ubuntu/PHASE1_FOUNDATION.md](phases/ubuntu/PHASE1_FOUNDATION.md) | Git repo, build deps, scaffold, first ISO |
+| 2 — Base System | [phases/ubuntu/PHASE2_BASE_SYSTEM.md](phases/ubuntu/PHASE2_BASE_SYSTEM.md) | Package lists, hooks, ARM64 builds |
+| 3 — Branding | [phases/ubuntu/PHASE3_BRANDING.md](phases/ubuntu/PHASE3_BRANDING.md) | GRUB, Plymouth, LightDM, XFCE theme |
+| 4 — Installer | [phases/ubuntu/PHASE4_INSTALLER.md](phases/ubuntu/PHASE4_INSTALLER.md) | Calamares config, Flatpak post-install scripts |
+| 5 — CI/CD | [PHASE5_CICD.md](PHASE5_CICD.md) | GitHub Actions, signing, release workflow — shared |
+| 6 — Distribution | [PHASE6_DISTRIBUTION.md](PHASE6_DISTRIBUTION.md) | Hosting, maintenance schedule, LTS rebase — shared |

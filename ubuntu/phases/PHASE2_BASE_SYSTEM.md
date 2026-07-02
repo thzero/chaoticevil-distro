@@ -205,29 +205,56 @@ chmod +x editions/server/hooks/01-server-hardening.hook.chroot
 
 ## Step 2.3 — Desktop Edition Packages
 
+### Add System76 PPA (required for COSMIC)
+
+Create `editions/desktop/archives/system76.list.chroot`:
+```
+deb https://ppa.launchpadcontent.net/system76-dev/stable/ubuntu noble main
+```
+
+Create `editions/developer/archives/system76.list.chroot` — same content.
+
+Create a hook to add the PPA signing key:
+`editions/desktop/hooks/00-system76-key.hook.chroot`:
+```bash
+#!/bin/bash
+set -e
+curl -fsSL https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x7F1DBDA0 | \
+    gpg --dearmor -o /etc/apt/keyrings/system76.gpg
+chmod 644 /etc/apt/keyrings/system76.gpg
+apt-get update -q
+```
+```bash
+chmod +x editions/desktop/hooks/00-system76-key.hook.chroot
+cp editions/desktop/hooks/00-system76-key.hook.chroot \
+   editions/developer/hooks/00-system76-key.hook.chroot
+```
+
+### Desktop package list
+
 Edit `editions/desktop/package-lists/desktop.list`:
 ```
-# Desktop environment
-xfce4
-xfce4-goodies
-xfce4-terminal
-xfce4-screensaver
-thunar
-thunar-volman
-thunar-archive-plugin
-
-# Display manager
-lightdm
-lightdm-gtk-greeter
-lightdm-gtk-greeter-settings
+# COSMIC Desktop (Wayland-native, via ppa:system76-dev/stable)
+cosmic-session
+cosmic-comp
+cosmic-panel
+cosmic-settings
+cosmic-files
+cosmic-terminal
+cosmic-launcher
+cosmic-edit
+cosmic-greeter
+greetd
 
 # Network
 network-manager
 network-manager-gnome
 nm-tray
 
-# Audio
-pulseaudio
+# Audio — PipeWire (required by COSMIC; replaces PulseAudio)
+pipewire
+pipewire-pulse
+wireplumber
 pavucontrol
 
 # Printing
@@ -256,10 +283,10 @@ gnome-disk-utility
 gparted
 baobab
 
-# Flatpak
+# Flatpak (COSMIC has native Flatpak/Flathub integration via cosmic-store)
 flatpak
 xdg-desktop-portal
-xdg-desktop-portal-gtk
+xdg-desktop-portal-cosmic
 xdg-user-dirs
 xdg-user-dirs-gtk
 
@@ -272,26 +299,54 @@ calamares
 calamares-data
 ```
 
-### Desktop: configure Flatpak and portal hook
+### Desktop: configure greetd and portal hook
 
 Create `editions/desktop/hooks/01-desktop-setup.hook.chroot`:
 ```bash
 #!/bin/bash
 set -e
 
-# Set XDG portal backend for XFCE
+# Configure greetd to launch cosmic-greeter
+mkdir -p /etc/greetd
+cat > /etc/greetd/config.toml << 'EOF'
+[terminal]
+vt = 1
+
+[default_session]
+command = "cosmic-greeter"
+user = "greeter"
+EOF
+
+# Create the greeter user greetd expects
+useradd -r -s /usr/sbin/nologin -d /var/lib/greeter greeter 2>/dev/null || true
+
+# Enable greetd as the display manager
+systemctl enable greetd
+systemctl disable lightdm 2>/dev/null || true
+
+# Register COSMIC session for Calamares displaymanager module
+mkdir -p /usr/share/wayland-sessions
+if [ ! -f /usr/share/wayland-sessions/cosmic.desktop ]; then
+    cat > /usr/share/wayland-sessions/cosmic.desktop << 'EOF'
+[Desktop Entry]
+Name=COSMIC
+Comment=COSMIC Desktop Environment
+Exec=cosmic-session
+Type=Application
+DesktopNames=COSMIC
+EOF
+fi
+
+# Set XDG portal backend for COSMIC
 mkdir -p /usr/share/xdg-desktop-portal
-cat > /usr/share/xdg-desktop-portal/xfce-portals.conf << 'EOF'
+cat > /usr/share/xdg-desktop-portal/cosmic-portals.conf << 'EOF'
 [preferred]
-default=gtk
+default=cosmic;gtk
 EOF
 
 # Enable Flatpak system-wide
 flatpak remote-add --system --if-not-exists flathub \
     https://dl.flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
-
-# Allow users in the flatpak group to manage Flatpaks without sudo
-usermod -a -G flatpak root 2>/dev/null || true
 ```
 
 ```bash
@@ -307,21 +362,23 @@ Edit `editions/developer/package-lists/developer.list`:
 # Everything from desktop (live-build doesn't support includes between lists,
 # so we duplicate the desktop list here and add dev packages below)
 
-# Desktop environment
-xfce4
-xfce4-goodies
-xfce4-terminal
-xfce4-screensaver
-thunar
-thunar-volman
-thunar-archive-plugin
-lightdm
-lightdm-gtk-greeter
-lightdm-gtk-greeter-settings
+# COSMIC Desktop (Wayland-native, via ppa:system76-dev/stable)
+cosmic-session
+cosmic-comp
+cosmic-panel
+cosmic-settings
+cosmic-files
+cosmic-terminal
+cosmic-launcher
+cosmic-edit
+cosmic-greeter
+greetd
 network-manager
 network-manager-gnome
 nm-tray
-pulseaudio
+pipewire
+pipewire-pulse
+wireplumber
 pavucontrol
 cups
 blueman
@@ -338,7 +395,7 @@ gparted
 baobab
 flatpak
 xdg-desktop-portal
-xdg-desktop-portal-gtk
+xdg-desktop-portal-cosmic
 xdg-user-dirs
 xdg-user-dirs-gtk
 plymouth
@@ -406,12 +463,9 @@ dnsutils
 # Flatpak
 flatpak
 xdg-desktop-portal
-xdg-desktop-portal-gtk
+xdg-desktop-portal-cosmic
 xdg-user-dirs
 xdg-user-dirs-gtk
-```
-
-### Developer: additional setup hook
 
 Create `editions/developer/hooks/01-developer-setup.hook.chroot`:
 ```bash
@@ -425,11 +479,11 @@ groupadd -f docker
 # Enable Docker service
 systemctl enable docker
 
-# Set XDG portal for XFCE (same as desktop)
+# Set XDG portal for COSMIC (same as desktop)
 mkdir -p /usr/share/xdg-desktop-portal
-cat > /usr/share/xdg-desktop-portal/xfce-portals.conf << 'EOF'
+cat > /usr/share/xdg-desktop-portal/cosmic-portals.conf << 'EOF'
 [preferred]
-default=gtk
+default=cosmic;gtk
 EOF
 
 # Install nvm for Node version management
