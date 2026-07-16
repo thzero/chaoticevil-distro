@@ -92,6 +92,20 @@ apt-get remove -y --purge \
 
 All other parts of the hook (wget from kernel.ubuntu.com, dpkg -i, apt-mark hold) are identical.
 
+### Default shell aliases
+
+Shared with the Ubuntu build — the file lives in `common/includes.chroot/etc/skel/.bash_aliases` and both builds rsync the `common/includes.chroot/` tree into `config/includes.chroot/` (see PHASE1). Debian's stock `~/.bashrc` sources `~/.bash_aliases` automatically, so no `.bashrc` override is needed.
+
+```bash
+# common/includes.chroot/etc/skel/.bash_aliases
+alias cd..='cd ..'
+alias ll='ls -alF'
+alias update='sudo apt update && sudo apt upgrade'
+# ...add new aliases here
+```
+
+Nothing Debian-specific here: edit the one shared file and both distros pick it up on the next build.
+
 ---
 
 ## Step 2.2 — Server Edition
@@ -339,5 +353,6 @@ git push origin dev
 - [ ] `os-release` shows `ID_LIKE=debian`
 - [ ] PipeWire active on Desktop/Developer editions
 - [ ] Mainline kernel version confirmed: `uname -r`
+- [ ] Shared `common/includes.chroot/etc/skel/.bash_aliases` present with default aliases (incl. `cd..`)
 - [ ] ARM64 server boots in QEMU
 - [ ] Changes committed to `dev`

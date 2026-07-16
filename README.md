@@ -87,6 +87,25 @@ Boot any of them on real hardware or a VM and you're in a working ChaoticEvil sy
 
 ---
 
+## Default shell aliases
+
+Every ChaoticEvil install ships a set of handy shell aliases, seeded for every user via `/etc/skel/.bash_aliases` (shared by both the Ubuntu and Debian builds). Run **`aliases`** in any terminal to list them.
+
+| Alias | Expands to | |
+|---|---|---|
+| `cd..` / `cd...` | `cd ..` / `cd ../..` | Navigation |
+| `ll` / `la` / `l` / `lt` | `ls` variants (long, all, columns, by time) | Listing |
+| `update` | `sudo apt update && sudo apt upgrade` | Maintenance |
+| `fullupgrade` | `sudo apt update && sudo apt full-upgrade` | Maintenance |
+| `install` / `search` / `autoremove` | apt shortcuts | Packages |
+| `df` / `free` | `df -h` / `free -h` | System info |
+| `ports` | `ss -tulanp` (listening sockets) | System info |
+| `grep` / `ip` | colourised output | Convenience |
+
+To add or change one, edit [`common/includes.chroot/etc/skel/.bash_aliases`](common/includes.chroot/etc/skel/.bash_aliases) — both distros pick it up on the next build.
+
+---
+
 ## Key files
 
 | File | Purpose |

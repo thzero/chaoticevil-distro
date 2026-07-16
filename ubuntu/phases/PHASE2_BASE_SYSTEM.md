@@ -145,6 +145,21 @@ chmod +x common/hooks/base/02-mainline-kernel.hook.chroot
 
 > The `KERNEL_VERSION="7.1"` line is a substitution target for `apply-branding.sh`. Set `KERNEL_MAINLINE_VERSION` in `distro.conf` and run `./scripts/apply-branding.sh --apply` to propagate the version into this hook.
 
+### Default shell aliases
+
+Per-user shell defaults are seeded through the skel tree, the same way COSMIC/XFCE defaults are (see PHASE3). Ubuntu's stock `~/.bashrc` already sources `~/.bash_aliases` if it exists, so we drop a `.bash_aliases` into skel rather than overwriting `.bashrc` — this stays forward-compatible with any future Ubuntu `.bashrc` changes.
+
+Create `common/includes.chroot/etc/skel/.bash_aliases`:
+```bash
+# ChaoticEvil default shell aliases
+alias cd..='cd ..'
+alias ll='ls -alF'
+alias update='sudo apt update && sudo apt upgrade'
+# ...add new aliases here
+```
+
+Every account created from skel — the Calamares install user and the live-session user — picks these up automatically. No hook is needed: at ISO build time no user accounts exist yet, so there is nothing to re-seed. To add or change an alias later, edit this one file and rebuild.
+
 ---
 
 ## Step 2.2 — Server Edition Packages
@@ -902,6 +917,7 @@ git push origin dev
 - [ ] `common/hooks/base/01-unattended-upgrades.hook.chroot` created and executable
 - [ ] `common/hooks/base/02-mainline-kernel.hook.chroot` created and executable
 - [ ] Mainline kernel version confirmed in booted ISO: `uname -r` shows expected version
+- [ ] `common/includes.chroot/etc/skel/.bash_aliases` created with default aliases (incl. `cd..`)
 - [ ] Server package list created, hardening hook created and executable
 - [ ] Desktop package list created with XFCE + Flatpak packages
 - [ ] Desktop setup hook created and executable
